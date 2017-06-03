@@ -19,7 +19,7 @@ private String mysqlHost = "localhost";
 private int mysqlPort = 3306;
 ```
 
-As soon as login successfully, you can use whatever command like what you use with mysql, becasue it just trasfered your command directly into the real mysql server and recevie the server reponse back to you!
+As soon as login successfully, you can use whatever command like what you use with mysql, becasue it just transfered your command directly into the real mysql server and recevie the server reponse back to you!
 
 In the output console, you can see each mysql protocol packet data like :
 
