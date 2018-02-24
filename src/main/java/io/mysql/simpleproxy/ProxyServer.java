@@ -1,15 +1,22 @@
 package io.mysql.simpleproxy;
 
+import java.util.concurrent.ThreadFactory;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
+import io.mysql.simpleproxy.conf.SystemConfig;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 
-public class Server {
+public class ProxyServer {
     
-    private static final Logger LOGGER = LoggerFactory.getLogger(Server.class);
-    private static Server instance;
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProxyServer.class);
+    private static ThreadFactory bossGroupThreadFactory = new ThreadFactoryBuilder().setNameFormat("bossGroup-%d").build();
+    private static ThreadFactory workGroupThreadFactory = new ThreadFactoryBuilder().setNameFormat("workGroup-%d").build();
+    private static ProxyServer instance;
     
     private SystemConfig systemConf;
     private Acceptor acceptor;
@@ -17,18 +24,22 @@ public class Server {
     private EventLoopGroup bossGroup;
     private EventLoopGroup workGroup;
     
-    private String host = "127.0.0.1";
-    private int port = 8066;
+    private String host;
+    private int port;
     
-    public static Server getInstance() {
+    public static ProxyServer getInstance() {
         return instance;
     }
     
-    public Server() {
+    public ProxyServer() {
         systemConf = new SystemConfig();
         systemConf.load();
-        bossGroup = new NioEventLoopGroup(1); // for accepting frontend connection
-        workGroup = new NioEventLoopGroup();
+        this.host = systemConf.getBindIp();
+        this.port = systemConf.getServerPort();
+        // for accepting frontend connection
+        bossGroup = new NioEventLoopGroup(systemConf.getBossThdCnt(), bossGroupThreadFactory);
+        // for IO R/W
+        workGroup = new NioEventLoopGroup(systemConf.getWorkThdCnt(), workGroupThreadFactory);
         connector = new Connector(workGroup);
         acceptor = new Acceptor(bossGroup, workGroup, host, port);
         instance = this;
@@ -46,7 +57,7 @@ public class Server {
     }
     
     public static void main(String[] args) {
-        Server server = new Server();
+        ProxyServer server = new ProxyServer();
         server.start();
     }
     

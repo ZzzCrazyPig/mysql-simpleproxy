@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mysql.simpleproxy.handler.FrontendConnectionHandler;
+import io.mysql.simpleproxy.handler.FrontendConnectionLogHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -31,15 +32,17 @@ public class Acceptor {
         this.host = host;
         this.port = port;
         serverBootstrap = new ServerBootstrap();
-        serverBootstrap.group(bossGroup, workGroup).channel(NioServerSocketChannel.class)
-        .localAddress(new InetSocketAddress(host, port))
-        .childHandler(new ChannelInitializer<SocketChannel>() {
-
-            @Override
-            protected void initChannel(SocketChannel ch) throws Exception {
-                ch.pipeline().addLast(new FrontendConnectionHandler());
-            }});
-        
+        final FrontendConnectionLogHandler logHandler = new FrontendConnectionLogHandler();
+        final FrontendConnectionHandler mainHandler = new FrontendConnectionHandler();
+        serverBootstrap.group(bossGroup, workGroup)
+        	.channel(NioServerSocketChannel.class)
+        	.localAddress(new InetSocketAddress(host, port))
+        	.childHandler(new ChannelInitializer<SocketChannel>() {
+	            @Override
+	            protected void initChannel(SocketChannel ch) throws Exception {
+	                ch.pipeline().addLast(logHandler, mainHandler);
+	            }
+            });
         instance = this;
     }
 
